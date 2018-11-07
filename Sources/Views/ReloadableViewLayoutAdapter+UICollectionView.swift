@@ -14,16 +14,22 @@ extension ReloadableViewLayoutAdapter: UICollectionViewDelegateFlowLayout {
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard indexPath.section < currentArrangement.count &&
+              indexPath.row < currentArrangement[indexPath.section].items.count else {
+            return CGSize()
+        }
         return currentArrangement[indexPath.section].items[indexPath.item].frame.size
     }
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
+        guard section < currentArrangement.count else { return CGSize() }
         return currentArrangement[section].header?.frame.size ?? .zero
     }
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForFooterInSection section: Int) -> CGSize {
+        guard section < currentArrangement.count else { return CGSize() }
         return currentArrangement[section].footer?.frame.size ?? .zero
     }
 }
@@ -34,6 +40,7 @@ extension ReloadableViewLayoutAdapter: UICollectionViewDataSource {
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        guard section < currentArrangement.count else { return 0 }
         return currentArrangement[section].items.count
     }
 
@@ -44,26 +51,31 @@ extension ReloadableViewLayoutAdapter: UICollectionViewDataSource {
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let item = currentArrangement[indexPath.section].items[indexPath.item]
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath)
-        item.makeViews(in: cell.contentView)
+        if indexPath.section < currentArrangement.count &&
+           indexPath.row < currentArrangement[indexPath.section].items.count {
+            let item = currentArrangement[indexPath.section].items[indexPath.item]
+            item.makeViews(in: cell.contentView)
+        }
         return cell
     }
 
     /// - Warning: Subclasses that override this method must call super
     open func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: reuseIdentifier, for: indexPath)
-        let arrangement: LayoutArrangement?
-        switch kind {
-        case UICollectionElementKindSectionHeader:
-            arrangement = currentArrangement[indexPath.section].header
-        case UICollectionElementKindSectionFooter:
-            arrangement = currentArrangement[indexPath.section].footer
-        default:
-            arrangement = nil
-            assertionFailure("unknown supplementary view kind \(kind)")
+        if indexPath.section < currentArrangement.count {
+            let arrangement: LayoutArrangement?
+            switch kind {
+            case UICollectionElementKindSectionHeader:
+                arrangement = currentArrangement[indexPath.section].header
+            case UICollectionElementKindSectionFooter:
+                arrangement = currentArrangement[indexPath.section].footer
+            default:
+                arrangement = nil
+                assertionFailure("unknown supplementary view kind \(kind)")
+            }
+            arrangement?.makeViews(in: view)
         }
-        arrangement?.makeViews(in: view)
         return view
     }
 }
